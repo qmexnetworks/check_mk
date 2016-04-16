@@ -1,0 +1,29 @@
+def inventory_xen_xl_list_cpubyvm(info):
+    nI = 0
+    for line in info:
+        nI += 1
+    nI = nI - 2
+    yield None, None
+
+def check_xen_xl_list_cpubyvm(item, params, info):
+    first_line = True
+    nI = 0
+    for line in info:
+        if first_line:
+            first_line = False
+        else:
+            cputime=int(float(line[5])*100)
+            try:
+                perfdata += [(str(line[0]), str(cputime)+"c")]
+            except:
+                perfdata = [(str(line[0]), str(cputime)+"c")]
+            nI += 1
+    nI = nI - 1
+    return 0, "%s VMs checked" % nI, perfdata
+
+check_info["xen_xl_list.cpubyvm"] = {
+    'check_function':            check_xen_xl_list_cpubyvm,
+    'inventory_function':        inventory_xen_xl_list_cpubyvm,
+    'service_description':       'XEN CPU by VM',
+    'has_perfdata':              'True',
+}

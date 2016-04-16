@@ -1,0 +1,53 @@
+#!/usr/bin/python
+# -*- encoding: utf-8; py-indent-offset: 4 -*-
+# +------------------------------------------------------------------+
+# |             ____ _               _        __  __ _  __           |
+# |            / ___| |__   ___  ___| | __   |  \/  | |/ /           |
+# |           | |   | '_ \ / _ \/ __| |/ /   | |\/| | ' /            |
+# |           | |___| | | |  __/ (__|   <    | |  | | . \            |
+# |            \____|_| |_|\___|\___|_|\_\___|_|  |_|_|\_\           |
+# |                                                                  |
+# | Copyright Mathias Kettner 2014             mk@mathias-kettner.de |
+# +------------------------------------------------------------------+
+#
+# This file is part of Check_MK.
+# Copyright by Mathias Kettner and Mathias Kettner GmbH.  All rights reserved.
+#
+# Check_MK is free software;  you can redistribute it and/or modify it
+# under the  terms of the  GNU General Public License  as published by
+# the Free Software Foundation in version 2.
+#
+# Check_MK is  distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY;  without even the implied warranty of
+# MERCHANTABILITY  or  FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have  received  a copy of the  GNU  General Public
+# License along with Check_MK.  If  not, email to mk@mathias-kettner.de
+# or write to the postal address provided at www.mathias-kettner.de
+#
+# @author Markus Plischke <m.plischke@q-mex.net>
+# @company Q-MEX Networks http://www.q-mex.net
+
+# Get phase Values (like Watts, Current, Volts etc.) from Rittal PDU via SNMP
+
+def inventory_rittal_pdu_phase(info):
+    # Debug: lets see how the data we get looks like
+    for name, value, unit, gauge in info:
+        if name[0:5] == "Phase":
+            yield name[:-6], None
+
+def check_rittal_pdu_phase(item, _no_params, info):
+    for name, value, unit, gauge in info:
+        if name[:-6] == item:
+            var = float(value) / float(gauge)
+            perfdata = [(str(unit), str(var))]
+            return 0, "OK - "+str(var)+" "+str(unit), perfdata
+
+check_info["rittal_pdu_phase"] = {
+    "check_function"        : check_rittal_pdu_phase,
+    "inventory_function"    : inventory_rittal_pdu_phase,
+    "service_description"   : "%s",
+    'has_perfdata'          : 'True',
+    "snmp_info"             : ( ".1.3.6.1.2.1", [ "47.1.1.1.1.2", "99.1.1.1.4", "99.1.1.1.6", "99.1.1.1.8" ] )
+}
