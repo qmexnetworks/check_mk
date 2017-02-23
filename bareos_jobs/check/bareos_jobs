@@ -1,0 +1,16 @@
+#!/usr/bin/python
+def inventory_bareos_jobs(info):
+    for line in info:
+        yield line[0], None
+
+def check_bareos_jobs(item, params, info):
+    for line in info:
+        if line[0] == item:
+            return 0, "Last Job on %s at %s" % (line[1],line[2])
+
+check_info["bareos_jobs"] = {
+    'check_function':            check_bareos_jobs,
+    'inventory_function':        inventory_bareos_jobs,
+    'service_description':       'Bareos Backup %s',
+    'has_perfdata':              'False',
+}
