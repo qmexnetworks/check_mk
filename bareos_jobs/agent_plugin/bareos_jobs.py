@@ -37,7 +37,7 @@ rows = cursor.fetchall()
 for row in rows:
     print("<<<<"+str(row[1])+">>>>")
     print("<<<bareos_jobs>>>")
-    cursor.execute("SELECT CONVERT(t0.Job USING utf8), CONVERT(t0.Name USING utf8), t0.EndTime FROM Job AS t0 LEFT JOIN Job AS t1 ON t1.Name=t0.Name AND t1.JobId>t0.JobId WHERE t0.ClientId = %s AND CONVERT(t0.Name USING utf8) != 'RestoreFiles' AND t1.JobId IS NULL", (row[0],))
+    cursor.execute("SELECT CONVERT(t0.Job USING utf8), CONVERT(t0.Name USING utf8), t0.EndTime FROM Job AS t0 LEFT JOIN Job AS t1 ON t1.Name=t0.Name AND t1.JobId>t0.JobId WHERE t0.ClientId = %s AND CONVERT(t0.Name USING utf8) != 'RestoreFiles' AND CONVERT(t0.JobStatus USING utf8) != 'R' AND t1.JobId IS NULL", (row[0],))
     rowsb = cursor.fetchall()
     for rowb in rowsb:
         # Catch Jobs with Wrong name and Ignore them
