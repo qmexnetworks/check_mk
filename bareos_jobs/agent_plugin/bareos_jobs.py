@@ -37,15 +37,18 @@ rows = cursor.fetchall()
 for row in rows:
     print("<<<<"+str(row[1])+">>>>")
     print("<<<bareos_jobs>>>")
-    cursor.execute("SELECT CONVERT(t0.Job USING utf8), CONVERT(t0.Name USING utf8), t0.EndTime FROM Job AS t0 LEFT JOIN Job AS t1 ON t1.Name=t0.Name AND t1.JobId>t0.JobId WHERE t0.ClientId = %s AND CONVERT(t0.Name USING utf8) != 'RestoreFiles' AND CONVERT(t0.JobStatus USING utf8) != 'R' AND t1.JobId IS NULL", (row[0],))
+    cursor.execute("SELECT CONVERT(Name USING utf8) FROM Job WHERE ClientId = %s GROUP BY Name;", (row[0],))
     rowsb = cursor.fetchall()
     for rowb in rowsb:
+        # Get Last Jobs
         # Catch Jobs with Wrong name and Ignore them
         try:
-            jobname = rowb[1].split("_")[1]
+            jobname = rowb[0].split("_")[1]
             error = False
         except:
             error = True
         if not error:
-            print str(jobname)+" "+str(rowb[2])
+            cursor.execute("SELECT `Type`,`Level`,`JobStatus`,`EndTime` FROM Job WHERE `ClientId` = %s AND `EndTime` != '0000-00-00 00:00:00' AND CONVERT(Name USING utf8) = %s ORDER BY `EndTime` DESC LIMIT 1;",(row[0],rowb[0]))
+            rowc = cursor.fetchone()
+            print str(jobname)+" "+str(rowc[3])
     
