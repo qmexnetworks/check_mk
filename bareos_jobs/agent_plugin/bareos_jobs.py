@@ -50,5 +50,10 @@ for row in rows:
         if not error:
             cursor.execute("SELECT `Type`,`Level`,`JobStatus`,`EndTime` FROM Job WHERE `ClientId` = %s AND `EndTime` != '0000-00-00 00:00:00' AND CONVERT(Name USING utf8) = %s ORDER BY `EndTime` DESC LIMIT 1;",(row[0],rowb[0]))
             rowc = cursor.fetchone()
-            print str(jobname)+" "+str(rowc[3])
-    
+            try:
+                if rowc[3]:
+                    print str(jobname)+" "+str(rowc[3])
+            except:
+                pass
+            finally:
+                pass
