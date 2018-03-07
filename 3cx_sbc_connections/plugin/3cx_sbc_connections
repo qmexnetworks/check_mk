@@ -1,0 +1,5 @@
+#!/bin/bash
+
+
+echo '<<<3cx_sbc_connections>>>'
+netstat -anpt | grep :5090 |grep ESTABLISHED | awk '{ print $5 }' | cut -d: -f1 | sort -u
