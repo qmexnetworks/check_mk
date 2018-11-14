@@ -1,0 +1,16 @@
+#!/usr/bin/python
+def inventory_evault_jobs(info):
+    for line in info:
+        yield line[0], None
+
+def check_evault_jobs(item, params, info):
+    for line in info:
+        if line[0] == item:
+            return 0, "Last Job on %s at %s" % (line[1],line[2])
+
+check_info["evault_jobs"] = {
+    'check_function':            check_evault_jobs,
+    'inventory_function':        inventory_evault_jobs,
+    'service_description':       'Evault Backup %s',
+    'has_perfdata':              'False',
+}
