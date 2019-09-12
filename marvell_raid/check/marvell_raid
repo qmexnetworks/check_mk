@@ -1,0 +1,53 @@
+#!/usr/bin/python
+
+def inventory_marvell_raid_vd(info):
+    for line in info:
+        if line[0] == "id:":
+            yield line[1], None
+
+def inventory_marvell_raid_pd(info):
+    for line in info:
+        if line[0] == "PD" and line[1] == "ID:":
+            pdid = str(line[2])
+        elif line[0] == "associated":
+            vdid = str(line[2])
+            yield pdid, None
+
+def check_marvell_raid_vd(item, params, info):
+    for line in info:
+        if line[0] == 'id:':
+            volumeid = int(line[1])
+        elif line[0] == 'status:' and volumeid == int(item):
+            status = line[1]
+        elif line[0] == 'RAID' and volumeid == int(item):
+            raidmode = line[2]
+        elif line[0] == 'name:' and volumeid == int(item):
+            raidname = line[1]
+    if status == 'functional':
+        return (0, 'Raid type is %s, Name: %s, State is %s'% (raidmode,raidname,status,))
+    else:
+        return (2, 'Status is %s' % (status,))
+
+def check_marvell_raid_pd(item, params, info):
+    for line in info:
+        if line[0] == "PD" and line[1] == "ID:":
+            pdid = int(line[2])
+        elif line[0] == 'Serial:' and pdid == int(item):
+            pdsn = line[1]
+        elif line[0] == 'Size:' and pdid == int(item):
+            pdsize = int(line[1]) / 1000000
+    return (0, 'Size: %s GB, SN: %s'% (pdsize,pdsn,))
+
+check_info["marvell_raid_vd"] = {
+    'check_function':            check_marvell_raid_vd,
+    'inventory_function':        inventory_marvell_raid_vd,
+    'service_description':       'Marvell Raid Virtual Drive %s',
+    'has_perfdata':              'False',
+}
+
+check_info["marvell_raid_pd"] = {
+    'check_function':            check_marvell_raid_pd,
+    'inventory_function':        inventory_marvell_raid_pd,
+    'service_description':       'Marvell Raid Physical Drive Slot %s',
+    'has_perfdata':              'False',
+}
