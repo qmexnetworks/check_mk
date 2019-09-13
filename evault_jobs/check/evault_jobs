@@ -29,6 +29,9 @@ def check_evault_jobs(item, params, info):
             elif line[1] == "SERVER":
                 warn = server_warn_seconds
                 crit = server_crit_seconds
+            elif line[1] == "VSPHERE_APPLIANCE":
+                warn = server_warn_seconds
+                crit = server_crit_seconds
             else:
                 warn = 0
                 crit = 0
