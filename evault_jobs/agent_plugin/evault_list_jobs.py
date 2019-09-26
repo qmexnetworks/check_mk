@@ -11,7 +11,7 @@ password = "secret"
 conn = pymssql.connect(server, user, password, "WebCC")
 cursor = conn.cursor()
 
-cursor.execute('SELECT Job.JobId,Result,DateTime,Errors,Warnings,computerName,Name,Agent.description,Agent.type FROM [WebCC].[dbo].[JobStatus] INNER JOIN WebCC.dbo.Job ON (WebCC.dbo.JobStatus.JobId = WebCC.dbo.Job.JobId) INNER JOIN WebCC.dbo.Agent ON (WebCC.dbo.JobStatus.AgentId = WebCC.dbo.Agent.agentID) WHERE WebCC.dbo.JobStatus.Type = %s;',"BACKUP")
+cursor.execute('SELECT Job.JobId,Result,DateTime,Errors,Warnings,computerName,Name,Agent.description,Agent.type FROM [WebCC].[dbo].[JobStatus] INNER JOIN WebCC.dbo.Job ON (WebCC.dbo.JobStatus.JobId = WebCC.dbo.Job.JobId) INNER JOIN WebCC.dbo.Agent ON (WebCC.dbo.JobStatus.AgentId = WebCC.dbo.Agent.agentID) WHERE WebCC.dbo.JobStatus.Type = %s AND WebCC.dbo.Job.IsDeleted = 0;',"BACKUP")
 rows = cursor.fetchall()
 
 cmk_dict = {}
