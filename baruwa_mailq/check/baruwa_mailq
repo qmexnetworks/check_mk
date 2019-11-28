@@ -4,7 +4,7 @@ import datetime
 import time
 
 warn_mails = 200
-crit_crit = 500
+crit_mails = 500
 
 def inventory_baruwa_mailq(info):
     for line in info:

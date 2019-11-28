@@ -4,13 +4,13 @@
 group = "agents/" + _("Agent Plugins")
 
 register_rule(group,
-    "agent_config:3cx_sbc_connections",
+    "agent_config:baruwa_mailq",
     DropdownChoice(
-        title = _("3CX SBC Connections (Linux)"),
-        help = _("This will deploy the agent plugin <tt>ceph</tt> for monitoring the status of 3CX SBC Connections."),
+        title = _("Baruwa Mailq (Linux)"),
+        help = _("This will deploy the agent plugin <tt>baruwa_mailq/tt> for monitoring the status of Baruwa Mail Queues"),
         choices = [
-            ( True, _("Deploy plugin for 3CX SBC Connections") ),
-            ( None, _("Do not deploy plugin for 3CX SBC Connections") ),
+            ( True, _("Deploy plugin for Baruwa Mail Queues") ),
+            ( None, _("Do not deploy plugin for Baruwa Mail Queues") ),
         ]
     )
 )
@@ -19,27 +19,27 @@ register_rule(group,
 
 register_check_parameters(
         subgroup_applications,
-        "3cx_sbc_connections",
-        _("3CX SBC Connections"),
+        "baruwa_mailq",
+        _("Baruwa Mail Queues"),
         Dictionary(
                 help = _("This ruleset can be used to change the connection count warning and crit levels or to disable them."),
                 elements = [
                         ("count",
                                 Tuple(
-                                        title = _("Number of Connections"),
+                                        title = _("Number of Mails in Queue"),
                                         elements = [
                                                 Integer(title = _("Warning at"), default_value = 0, min_value = 0 ),
                                                 Integer(title = _("Critical at"), default_value = 0, min_value = 0 ),
                                                 ],
-                                        help = _("You can adjust the number of connections before this service goes into warning/critical. Set to 0 to disable."),
+                                        help = _("You can adjust the number of mails in queue before this service goes into warning/critical. Set to 0 to disable."),
                                         ),
                                 ),
                         ],
                 optional_keys = False,
         ),
         TextAscii(
-                title = _("SBC Connections"),
-                help = _("Specify the amount of 3cx-sbc-connection"),
+                title = _("Baruwa Mail Queues"),
+                help = _("Specify the amount of baruwa_mailq"),
                 allow_empty = True
         ),
         'dict'
