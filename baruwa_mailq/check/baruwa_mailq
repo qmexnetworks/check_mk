@@ -1,0 +1,28 @@
+#!/usr/bin/python
+
+import datetime
+import time
+
+warn_mails = 200
+crit_crit = 500
+
+def inventory_baruwa_mailq(info):
+    for line in info:
+        yield line[0], None
+
+def check_baruwa_mailq(item, params, info):
+    for line in info:
+        if line[0] == item:
+            if int(line[1]) < warn_mails:
+                return 0, "Number of Mails in Queue: %s" % (line[1]), [(str(line[0]), str(line[1]))]
+            elif int(line[1]) < crit_mails:
+                return 1, "Number of Mails in Queue: %s" % (line[1]), [(str(line[0]), str(line[1]))]
+            else:
+                return 2, "Number of Mails in Queue: %s" % (line[1]), [(str(line[0]), str(line[1]))]
+
+check_info["baruwa_mailq"] = {
+    'check_function':            check_baruwa_mailq,
+    'inventory_function':        inventory_baruwa_mailq,
+    'service_description':       'Baruwa Queue %s',
+    'has_perfdata':              'True',
+}

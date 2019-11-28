@@ -1,0 +1,12 @@
+#!/bin/bash
+
+DIR="/etc/baruwa/"
+if [ -d "$DIR" ]; then
+    echo '<<<baruwa_mailq>>>'
+    echo -n "inboundq "
+    /usr/sbin/exim -bpc
+    echo -n "scanq "
+    /usr/sbin/exim -bpc -qGbaruwa
+    echo -n  "outboundq "
+    /usr/sbin/exim -C /etc/exim/exim_out.conf -bpc
+fi
