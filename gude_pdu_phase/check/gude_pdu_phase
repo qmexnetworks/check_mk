@@ -1,0 +1,28 @@
+#!/usr/bin/python
+# -*- encoding: utf-8; py-indent-offset: 4 -*-
+#
+# @author Markus Plischke <m.plischke@q-mex.net>
+# @company Q-MEX Networks http://www.q-mex.net
+
+# Get phase Values (Current) from GUDE PDU via SNMP
+
+def inventory_gude_pdu_phase(info):
+    # Debug: lets see how the data we get looks like
+    print info
+    for name, value in info:
+        yield name, None
+
+def check_gude_pdu_phase(item, _no_params, info):
+    for name, value in info:
+        if name == item:
+            var = float(value) / 1000
+            perfdata = [("A", str(var))]
+            return 0, "OK - "+str(var)+" A", perfdata
+
+check_info["gude_pdu_phase"] = {
+    "check_function"        : check_gude_pdu_phase,
+    "inventory_function"    : inventory_gude_pdu_phase,
+    "service_description"   : "Current %s",
+    'has_perfdata'          : 'True',
+    "snmp_info"             : ( ".1.3.6.1.4.1.28507.56.1.5.1.2.1", [ "100","5" ] )
+}
