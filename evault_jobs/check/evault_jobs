@@ -49,11 +49,17 @@ def check_evault_jobs(item, params, info):
                 return 1, "Last Job %s at %s %s, %s Hours ago" % (line[2],line[3],line[4],int(hours))
             elif line[2] == "COMPLETED" and diff_seconds >= crit:
                 return 2, "Last Job %s at %s %s, %s Hours ago" % (line[2],line[3],line[4],int(hours))
+            elif line[2] == "COMPLETED_WITH_WARNINGS" and diff_seconds < warn:
+                return 0, "Last Job %s at %s %s, %s Hours ago" % (line[2],line[3],line[4],int(hours))
             elif line[2] == "COMPLETED_WITH_WARNINGS" and diff_seconds < crit:
                 return 1, "Last Job %s at %s %s, %s Hours ago" % (line[2],line[3],line[4],int(hours))
             elif line[2] == "COMPLETED_WITH_WARNINGS" and diff_seconds >= crit:
                 return 2, "Last Job %s at %s %s, %s Hours ago" % (line[2],line[3],line[4],int(hours))
-            elif line[2] == "COMPLETED_WITH_ERRORS":
+            elif line[2] == "COMPLETED_WITH_ERRORS" and diff_seconds < warn:
+                return 0, "Last Job %s at %s %s, %s Hours ago" % (line[2],line[3],line[4],int(hours))
+            elif line[2] == "COMPLETED_WITH_ERRORS" and diff_seconds < crit:
+                return 1, "Last Job %s at %s %s, %s Hours ago" % (line[2],line[3],line[4],int(hours))
+            elif line[2] == "COMPLETED_WITH_ERRORS" and diff_seconds >= crit:
                 return 2, "Last Job %s at %s %s, %s Hours ago" % (line[2],line[3],line[4],int(hours))
             elif line[2] == "FAILED":
                 return 2, "Last Job %s at %s %s, %s Hours ago" % (line[2],line[3],line[4],int(hours))
