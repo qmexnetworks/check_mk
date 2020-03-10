@@ -1,0 +1,7 @@
+#!/bin/bash
+
+FILE="/usr/sbin/rtpengine-ctl"
+if [ -f "$FILE" ]; then
+    echo '<<<rtpengine_stats>>>'
+    $FILE -ip 127.0.0.1 -port 9900 list numsessions | grep own
+fi

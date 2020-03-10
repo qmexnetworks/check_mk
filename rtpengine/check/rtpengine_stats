@@ -1,0 +1,20 @@
+#!/usr/bin/python
+
+import datetime
+import time
+
+def inventory_rtpengine_stats(info):
+    for line in info:
+        yield line[0], None
+
+def check_rtpengine_stats(item, params, info):
+    for line in info:
+        if line[0] == item:
+            return 0, "Number of Sessions: %s" % (line[3]), [("Sessions", str(line[3]))]
+
+check_info["rtpengine_stats"] = {
+    'check_function':            check_rtpengine_stats,
+    'inventory_function':        inventory_rtpengine_stats,
+    'service_description':       'RTPEngine Total Sessions',
+    'has_perfdata':              'True',
+}
