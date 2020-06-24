@@ -1,0 +1,29 @@
+#!/usr/bin/python
+# -*- encoding: utf-8; py-indent-offset: 4 -*-
+#
+# @author Markus Plischke <m.plischke@q-mex.net>
+# @company Q-MEX Networks http://www.q-mex.net
+
+# Get Values, Current etc. from Schleifenbauer DPM3 via SNMP
+
+def inventory_schleifenbauer_dpm3_phase(info):
+    # Debug: lets see how the data we get looks like
+    for name, amp, volt, watt in info:
+        yield name, None
+
+def check_schleifenbauer_dpm3_phase(item, _no_params, info):
+    for name, amp, volt, watt in info:
+        if name == item:
+            var_amp = float(amp) / 100
+            var_volt = float(volt) / 100
+            var_watt = watt
+            perfdata = [("A", str(var_amp)),("V", str(var_volt)),("W", str(var_watt))]
+            return 0, "OK - "+str(var_amp)+" A, "+str(var_volt)+" V, "+str(var_volt)+" W", perfdata
+
+check_info["schleifenbauer_dpm3_phase"] = {
+    "check_function"        : check_schleifenbauer_dpm3_phase,
+    "inventory_function"    : inventory_schleifenbauer_dpm3_phase,
+    "service_description"   : "Phase L%s",
+    'has_perfdata'          : 'True',
+    "snmp_info"             : ( ".1.3.6.1.4.1.31034.12.1.1.2.6.1.1", [ "1.1","5.1","7.1","9.1" ] )
+}
