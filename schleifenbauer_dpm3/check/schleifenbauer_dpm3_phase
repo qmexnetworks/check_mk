@@ -18,7 +18,7 @@ def check_schleifenbauer_dpm3_phase(item, _no_params, info):
             var_volt = float(volt) / 100
             var_watt = watt
             perfdata = [("A", str(var_amp)),("V", str(var_volt)),("W", str(var_watt))]
-            return 0, "OK - "+str(var_amp)+" A, "+str(var_volt)+" V, "+str(var_volt)+" W", perfdata
+            return 0, "OK - "+str(var_amp)+" A, "+str(var_volt)+" V, "+str(var_watt)+" W", perfdata
 
 check_info["schleifenbauer_dpm3_phase"] = {
     "check_function"        : check_schleifenbauer_dpm3_phase,

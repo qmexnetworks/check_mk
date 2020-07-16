@@ -1,0 +1,38 @@
+#!/usr/bin/python
+
+def inventory_zpool_iostat(info):
+    for line in info:
+        yield line[0], None
+
+def check_zpool_iostat(item, params, info):
+    for line in info:
+        if line[0] == item:
+            if line[5][-1] == "G":
+                read_tp = float(line[5][:-1]) * 1000000000
+            elif line[5][-1] == "M":
+                read_tp = float(line[5][:-1]) * 1000000
+            elif line[5][-1] == "K":
+                read_tp = float(line[5][:-1]) * 1000
+            elif line[5] != "0":
+                read_tp = float(line[5][:-1])
+            else:
+                read_tp = float(line[5])
+            if line[6][-1] == "G":
+                write_tp = float(line[6][:-1]) * 1000000000
+            elif line[6][-1] == "M":
+                write_tp = float(line[6][:-1]) * 1000000
+            elif line[6][-1] == "K":
+                write_tp = float(line[6][:-1]) * 1000
+            elif line[6] != "0":
+                write_tp = float(line[6][:-1])
+            else:
+                write_tp = float(line[6])
+            
+            return 0, "Read operations: %s/s, Write operations: %s/s, Read throughput: %s/s, Write throughput: %s/s" % (line[3],line[4],line[5],line[6]), [("zpool_iostat_read_ops",line[3]), ("zpool_iostat_write_ops",line[4]), ("zpool_iostat_read_tp",read_tp), ("zpool_iostat_write_tp",write_tp)]
+
+check_info["zpool_iostat"] = {
+    'check_function':            check_zpool_iostat,
+    'inventory_function':        inventory_zpool_iostat,
+    'service_description':       'zpool iostat %s',
+    'has_perfdata':              'True',
+}
