@@ -1,0 +1,45 @@
+#!/usr/bin/python
+# -*- encoding: utf-8; py-indent-offset: 4 -*-
+#
+# @author Markus Plischke <m.plischke@q-mex.net>
+# @company Q-MEX Networks http://www.q-mex.net
+
+# Get Optical Data from Mikrotik RouterOS via SNMP
+
+def inventory_mikrotik_optical(info):
+    for name, rxfcs, txfcs, optical_name, wavelenght, temp, voltage, current, txpower, rxpower in info:
+        if name == optical_name:
+            yield name, None
+
+def check_mikrotik_optical(item, _no_params, info):
+    this_time = time.time()
+    perfdata = []
+    for name, rxfcs, txfcs, optical_name, wavelenght, temp, voltage, current, txpower, rxpower in info:
+        if name == item:
+            wavelenght = int(wavelenght) / 100
+            if not rxfcs:
+                rxfcs = 0
+            if not txfcs:
+                txfcs = 0
+            rxfcs = get_rate("rxfcs.%s" % (name), this_time, int(rxfcs), allow_negative=False, onwrap=SKIP)
+            txfcs = get_rate("txfcs.%s" % (name), this_time, int(txfcs), allow_negative=False, onwrap=SKIP)
+            temp = str(temp)+"C"
+            voltage = float(voltage) / 1000
+            if not txpower:
+                txpower = 0
+            else:
+                txpower = float(txpower) / 1000
+            if not rxpower:
+                rxpower = 0
+            else:
+                rxpower = float(rxpower) / 1000
+            perfdata = [("rx_fcs_error", str(rxfcs)+"/s"),("tx_fcs_error", str(txfcs)+"/s"),("Temperature", temp),("Voltage", str(voltage)+"V"),("Current", str(current)+"mA"),("tx_power", str(txpower)+"dBm"),("rx_power", str(rxpower)+"dBm")]
+            return 0, "OK - Wavelenght: "+str(wavelenght)+" nm, Voltage: "+str(voltage)+"V, Current: "+str(current)+" mA, TX Power: "+str(txpower)+" dBm, RX Power: "+str(rxpower)+" dBm", perfdata
+
+check_info["mikrotik_optical"] = {
+    "check_function"        : check_mikrotik_optical,
+    "inventory_function"    : inventory_mikrotik_optical,
+    "service_description"   : "Optical Interface %s",
+    'has_perfdata'          : 'True',
+    "snmp_info"             : ( ".1.3.6.1.4.1.14988.1.1", [ "14.1.1.2","14.1.1.45","14.1.1.87","19.1.1.2","19.1.1.5","19.1.1.6","19.1.1.7","19.1.1.8","19.1.1.9","19.1.1.10" ] )
+}
