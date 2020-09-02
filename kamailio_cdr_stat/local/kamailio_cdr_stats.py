@@ -32,11 +32,11 @@ if os.path.isfile("/etc/check_mk/database.cfg"):
     connection = MySQLdb.connect(host=config_map("MySQL")['server'], user=config_map("MySQL")['username'], passwd=config_map("MySQL")['password'], db=config_map("MySQL")['database'])
     cursor = connection.cursor()
 
-    cursor.execute("SELECT COUNT(*) FROM cdrs WHERE calltype = 'outbound' AND DATE(call_start_time) = CURDATE()")
+    cursor.execute("SELECT COUNT(*) FROM (SELECT cdr_id FROM cdrs WHERE calltype = 'outbound' AND DATE(call_start_time) = CURDATE() GROUP BY sip_call_id) t")
     row = cursor.fetchone()
     outbound = int(row[0])
 
-    cursor.execute("SELECT COUNT(*) FROM cdrs WHERE calltype = 'inbound' AND DATE(call_start_time) = CURDATE()")
+    cursor.execute("SELECT COUNT(*) FROM (SELECT cdr_id FROM cdrs WHERE calltype = 'inbound' AND DATE(call_start_time) = CURDATE() GROUP BY sip_call_id) t")
     row = cursor.fetchone()
     inbound = int(row[0])
 
