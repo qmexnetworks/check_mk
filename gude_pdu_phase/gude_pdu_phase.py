@@ -3,7 +3,7 @@
 #
 # @author Markus Plischke <m.plischke@q-mex.net>, Etienne Bruines <e.bruines@q-mex.net>
 # @company Q-MEX Networks https://www.q-mex.net
-# @source https://github.com/qmexnetworks/check_mk/blob/master/gude_pdu_phase/check/gude_pdu_phase
+# @source https://github.com/qmexnetworks/check_mk/blob/master/gude_pdu_phase/gude_pdu_phase.py
 
 from .agent_based_api.v1 import *
 
@@ -12,7 +12,7 @@ from .agent_based_api.v1 import *
 
 def discover_gude_pdu_phase(section):
     for line in section:
-        yield Service(item=line)
+        yield Service(item=line[0])
 
 
 def check_gude_pdu_phase(item, section):
