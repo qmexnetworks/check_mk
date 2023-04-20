@@ -1,0 +1,106 @@
+#!/bin/bash
+
+# Reason for this no-op: shellcheck disable=... before the first command disables the error for the
+# entire script.
+:
+
+# sample output of pgrep command
+# 1051 /usr/bin/keydb-server 127.0.0.1:6380
+# 1324 /usr/bin/keydb-server 127.0.0.1:6379
+
+# example cfg file:
+#
+# KEYDB_INSTANCES=(My_First_Keydb My_Second_Keydb My_socket_Keydb)
+#
+# KEYDB_HOST_My_First_Keydb="127.0.0.1"
+# KEYDB_PORT_My_First_Keydb="6380"
+# KEYDB_PASSWORD_My_First_Keydb='MYPASSWORD'
+#
+# KEYDB_HOST_My_Second_Keydb="127.0.0.1"
+# KEYDB_PORT_My_Second_Keydb="6379"
+
+# KEYDB_HOST_My_socket_Keydb="/var/keydb/keydb.sock"
+# KEYDB_PORT_My_socket_Keydb="unix-socket"
+
+load_config() {
+    # source optional configuration file
+    if [ -e "$MK_CONFDIR/keydb.cfg" ]; then
+        # shellcheck source=../cfg_examples/keydb.cfg
+        . "$MK_CONFDIR/keydb.cfg"
+    fi
+}
+
+keydb_args() {
+    INSTANCE=$1
+
+    HOST="KEYDB_HOST_$INSTANCE"
+    PORT="KEYDB_PORT_$INSTANCE"
+    PASSWORD="KEYDB_PASSWORD_$INSTANCE"
+
+    # if autodetection is used, rewrite instance name for section output
+    if [[ "$IS_DETECTED" == true ]]; then
+        INSTANCE="${!HOST};${!PORT}"
+    fi
+
+    if [[ "${!PORT}" == "unix-socket" ]]; then
+        KEYDB_ARGS=("-s" "${!HOST}")
+    else
+        KEYDB_ARGS=("-h" "${!HOST}" "-p" "${!PORT}")
+    fi
+
+    if [[ "${!PASSWORD}" ]] && [[ "${!PASSWORD}" != "None" ]]; then
+        KEYDB_ARGS+=("-a" "${!PASSWORD}")
+    fi
+
+    KEYDB_ARGS+=("info")
+}
+
+main () {
+    set -e -o pipefail
+
+    KEYDB_INSTANCES=()
+    IS_DETECTED=false
+
+    load_config
+
+    # if no servers in config file, try to detect
+    if [ ${#KEYDB_INSTANCES[@]} -eq 0 ]; then
+        IS_DETECTED=true
+        # find instances and remove entries like "*:6879", possible with docker container
+        DETECTED=$(pgrep -xa "keydb-server" 2>/dev/null | awk '/:[0-9]+/ && !/\*/ { print $3 }')
+
+        # add found keydb instances
+        for KEYDB_INSTANCE in $DETECTED; do
+            for inst in $KEYDB_INSTANCE; do
+                IFS=":" read -ra parts <<<"$inst"
+
+                # dot of IP can not be used in variable names
+                KEYDB_NAME=$(echo "$inst" | tr :. _)
+
+                # create dynamic variables
+                declare "KEYDB_HOST_$KEYDB_NAME=${parts[0]}"
+                declare "KEYDB_PORT_$KEYDB_NAME=${parts[1]}"
+
+                # append instance to array
+                KEYDB_INSTANCES+=("${KEYDB_NAME}")
+            done
+        done
+    fi
+
+    # print KeyDB section, if servers are found
+    [ "${KEYDB_INSTANCES[*]}" ] || exit 0
+
+    echo "<<<keydb_info:sep(58)>>>"
+
+    for INSTANCE in "${KEYDB_INSTANCES[@]}"; do
+        keydb_args "${INSTANCE}"
+        # print server section
+        echo "[[[$INSTANCE|${!HOST}|${!PORT}]]]"
+
+        # execute command
+        waitmax 3 keydb-cli "${KEYDB_ARGS[@]}" || true
+        echo
+    done
+}
+
+[ -z "${MK_SOURCE_ONLY}" ] && main "$@"
