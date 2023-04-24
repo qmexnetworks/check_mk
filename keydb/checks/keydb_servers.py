@@ -10,6 +10,7 @@ from cmk.base.check_api import (
     get_timestamp_human_readable,
 )
 
+
 # <<<keydb_info>>>
 # [[[MY_FIRST_REDIS|127.0.0.1|6380]]]
 # ...
@@ -97,10 +98,18 @@ def parse_section(section):
 
 
 def discover_keydb_function(section):
-    name, _ = parse_section(section)
+    name, info = parse_section(section)
     yield Service(item=name + " Server Info")
     yield Service(item=name + " Clients")
     yield Service(item=name + " Persistence")
+
+    yield Service(item=name + " Replication")
+    for i in range(10):
+        if info.get("slave%d" % i) is None:
+            break
+        slave_info = info.get("slave%d" % i)
+        ip = parse_csv_line(slave_info).get("ip")
+        yield Service(item=name + " Slave " + ip)
 
 
 def check_keydb_info(item, params, section):
@@ -115,8 +124,84 @@ def check_keydb_info(item, params, section):
         yield from output_clients_info(info, params)
     elif "Persistence" in item:
         yield from output_persistence_info(info, params)
+    elif "Replication" in item:
+        yield from output_replication_info(info, params)
+    elif "Slave" in item:
+        yield from output_slave_info(info, params, item)
     else:
         yield Result(state=State.CRIT, summary=f"Unknown item: {item}")
+
+
+def output_replication_info(info, params):
+    connected_slaves = info.get("connected_slaves")
+    if connected_slaves is None:
+        connected_slaves = 0
+
+    yield Metric(
+        name="connected_slaves",
+        value=int(connected_slaves),
+    )
+
+    master_failover_state = info.get("master_failover_state")
+    if master_failover_state is not None:
+        if master_failover_state == "no-failover":
+            yield Result(
+                state=State.OK,
+                summary="No ongoing failover",
+            )
+        else:
+            yield Result(
+                state=State.WARN,
+                summary=f"Ongoing failover: {master_failover_state}",
+            )
+
+    role = info.get('role')
+    yield Result(
+        state=State.OK,
+        summary=f"Role: {role}",
+    )
+
+
+def output_slave_info(info, params, item):
+    connected_slaves = info.get("connected_slaves")
+    if connected_slaves is None:
+        connected_slaves = 0
+
+    # Find the info on this slave
+    for i in range(int(connected_slaves)):
+        slave = info.get("slave%d" % i)
+        if slave is None:
+            continue
+
+        slave_info = parse_csv_line(slave)
+        ip = slave_info.get("ip")
+        if ip not in item:
+            continue
+
+        yield Metric(
+            name="lag",
+            value=int(slave_info.get("lag")),
+        )
+
+        state = slave_info.get("state")
+        if state != "online":
+            yield Result(
+                state=State.CRIT,
+                summary=f"slave{i} {ip}: {state}",
+            )
+        else:
+            yield Result(
+                state=State.OK,
+                summary=f"slave{i} {ip}: online",
+            )
+
+
+def parse_csv_line(line: str) -> dict:
+    d = dict()
+    for item in line.split(","):
+        key, value = item.split("=")
+        d[key] = value
+    return d
 
 
 def output_persistence_info(info, params):
@@ -177,7 +262,7 @@ def output_clients_info(info, params):
             levels_upper=upper_level,
             levels_lower=lower_level,
             label=infotext,
-            )
+        )
         yield metric
         yield result
 
