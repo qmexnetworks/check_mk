@@ -2,7 +2,7 @@
 import time
 from datetime import timedelta
 
-from .agent_based_api.v1 import register, Service, Result, State, Metric
+from .agent_based_api.v1 import register, Service, Result, State, Metric, check_levels
 
 from cmk.base.check_api import (
     get_age_human_readable,
@@ -103,35 +103,32 @@ def discover_keydb_function(section):
     yield Service(item=name + " Persistence")
 
 
-def check_keydb_info(item, section):
+def check_keydb_info(item, params, section):
     name, info = parse_section(section)
 
     if len(info) == 0:
         return
 
     if "Server Info" in item:
-        yield from output_servers_info(info)
+        yield from output_servers_info(info, params)
     elif "Clients" in item:
-        yield from output_clients_info(info)
+        yield from output_clients_info(info, params)
     elif "Persistence" in item:
-        yield from output_persistence_info(info)
+        yield from output_persistence_info(info, params)
     else:
         yield Result(state=State.CRIT, summary=f"Unknown item: {item}")
 
 
-def output_persistence_info(info):
-    # TODO: params?
-
+def output_persistence_info(info, params):
     for status, duration, infotext in [
         ("rdb_last_bgsave_status", "rdb_last_bgsave", "Last RDB save operation: "),
         ("aof_last_bgrewrite_status", "aof_last_rewrite", "Last AOF rewrite operation: "),
     ]:
         value = info.get(status)
         if value is not None:
-            state = 0
+            state = State.OK
             if value != "ok":
-                # TODO: what does this do?
-                # state = params.get("%s_state" % duration)
+                state = params.get("%s_state" % duration)
                 infotext += "faulty"
             else:
                 infotext += "successful"
@@ -140,7 +137,7 @@ def output_persistence_info(info):
             if duration_val is not None and int(duration_val) != -1:
                 infotext += " (Duration: %s)" % get_age_human_readable(int(duration_val))
             yield Result(
-                state=State.OK,
+                state=state,
                 summary=infotext,
             )
 
@@ -156,11 +153,11 @@ def output_persistence_info(info):
         yield Metric(
             "changes_sld",
             int(rdb_changes),
-            # levels=params.get("rdb_changes_count"),
+            levels=params.get("rdb_changes_count"),
         )
 
 
-def output_clients_info(info):
+def output_clients_info(info, params):
     for data_key, param_key, infotext in [
         ("connected_clients", "connected", "Number of client connections"),
         ("client_longest_output_list", "output", "Longest output list"),
@@ -171,40 +168,30 @@ def output_clients_info(info):
         if clients_value is None:
             continue
 
-        # upper_level = params.get("%s_upper" % param_key, (None, None))
-        # lower_level = params.get("%s_lower" % param_key, (None, None))
+        upper_level = params.get("%s_upper" % param_key, (None, None))
+        lower_level = params.get("%s_lower" % param_key, (None, None))
 
-        yield Metric(
-            name="clients_%s" % param_key,
+        result, metric = check_levels(
             value=int(clients_value),
-            # TODO: boundaries from parameters
-        )
-        yield Result(
-            state=State.OK,
-            summary="%s: %s" % (infotext, clients_value),
-        )
-
-        # yield check_levels(
-        #     clients_value,
-        #     "clients_%s" % param_key,
-        #     None,
-        #     # upper_level + lower_level,
-        #     human_readable_func=int,
-        #     infoname=infotext,
-        #     )
+            metric_name="clients_%s" % param_key,
+            levels_upper=upper_level,
+            levels_lower=lower_level,
+            label=infotext,
+            )
+        yield metric
+        yield result
 
 
-def output_servers_info(info):
+def output_servers_info(info, params):
     server_mode = info.get("keydb_mode")
     if server_mode is not None:
-        mode_state = 0
+        mode_state = State.OK
         infotext = "Mode: %s" % server_mode.title()
-        # TODO: Parse expected mode in parameters
-        # mode_params = params.get("expected_mode")
-        # if mode_params is not None:
-        #     if mode_params != server_mode:
-        #         mode_state = 1
-        #         infotext += " (expected: %s)" % mode_params.title()
+        mode_params = params.get("expected_mode")
+        if mode_params is not None:
+            if mode_params != server_mode:
+                mode_state = State.CRIT
+                infotext += " (expected: %s)" % mode_params.title()
 
         yield mode_state, infotext
 
@@ -238,4 +225,5 @@ register.check_plugin(
     service_name="KeyDB %s",
     discovery_function=discover_keydb_function,
     check_function=check_keydb_info,
+    check_default_parameters={},
 )
