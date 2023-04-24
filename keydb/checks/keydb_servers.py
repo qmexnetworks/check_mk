@@ -1,6 +1,14 @@
 #!/usr/bin/env python3
+import time
+from datetime import timedelta
 
 from .agent_based_api.v1 import register, Service, Result, State, Metric
+
+from cmk.base.check_api import (
+    get_age_human_readable,
+    get_parsed_item_data,
+    get_timestamp_human_readable,
+)
 
 # <<<keydb_info>>>
 # [[[MY_FIRST_REDIS|127.0.0.1|6380]]]
@@ -112,8 +120,44 @@ def check_keydb_info(item, section):
 
 
 def output_persistence_info(info):
-    return
-    yield
+    # TODO: params?
+
+    for status, duration, infotext in [
+        ("rdb_last_bgsave_status", "rdb_last_bgsave", "Last RDB save operation: "),
+        ("aof_last_bgrewrite_status", "aof_last_rewrite", "Last AOF rewrite operation: "),
+    ]:
+        value = info.get(status)
+        if value is not None:
+            state = 0
+            if value != "ok":
+                # TODO: what does this do?
+                # state = params.get("%s_state" % duration)
+                infotext += "faulty"
+            else:
+                infotext += "successful"
+
+            duration_val = info.get("%s_time_sec" % duration)
+            if duration_val is not None and int(duration_val) != -1:
+                infotext += " (Duration: %s)" % get_age_human_readable(int(duration_val))
+            yield Result(
+                state=State.OK,
+                summary=infotext,
+            )
+
+    rdb_save_time = info.get("rdb_last_save_time")
+    if rdb_save_time is not None:
+        yield Result(
+            state=State.OK,
+            summary="Last successful RDB save: %s" % get_timestamp_human_readable(rdb_save_time),
+        )
+
+    rdb_changes = info.get("rdb_changes_since_last_save")
+    if rdb_changes is not None:
+        yield Metric(
+            "changes_sld",
+            int(rdb_changes),
+            # levels=params.get("rdb_changes_count"),
+        )
 
 
 def output_clients_info(info):
@@ -164,11 +208,11 @@ def output_servers_info(info):
 
         yield mode_state, infotext
 
-    # TODO: Parse server uptime
     server_uptime = info.get("uptime_in_seconds")
     if server_uptime is not None:
-        yield Result(state=State.OK, summary=f"Uptime: {server_uptime} seconds")
-    #     yield check_uptime_seconds(params, server_uptime)
+        date = time.strftime("%c", time.localtime(time.time() - int(server_uptime)))
+        delta = timedelta(seconds=int(server_uptime))
+        yield Result(state=State.OK, summary=f"Up since {date}, uptime: {delta}")
 
     for key, infotext in [
         ("redis_version", "Version"),  # keydb_version does not exist
